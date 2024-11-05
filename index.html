@@ -272,7 +272,7 @@ input[type=range]:focus::-webkit-slider-runnable-track {
 
         <input class="switch-btn" onclick="startHook()" type="checkbox">拦截
         <br>
-        <input class="switch-btn" onclick="sendData()" type="checkbox">发送
+        <input class="switch-btn" onclick="startHook1()" type="checkbox">发送
 
         <div id="infoArea" style="margin-top:10px; padding:10px;">
             <p>完整数据: <span id="dataValue">等待拦截...</span></p>
@@ -402,6 +402,10 @@ function startHook() {
     script.call("hook_send");
 }
 
+function startHook1() {
+    script.call("hook_send_packet");
+}
+
 
 
 
@@ -453,58 +457,135 @@ function startHook() {
 
     function frida_script() { if(arguments.length) return new Error().line;
     console.log("frida脚本正在运行...\nfrida script is running...");
-    
-    rpc.exports.hook_send = function() {
-    var isHooked = true;
-    var send_func = h5frida.fishhook("send", 
-        "int",
-        ["int", "pointer", "size_t", "int"], 
-        function(sockfd, buf, len, flags) {
-            if(isHooked && len == 12) {
-                // 读取数据并转换为数组
-                var rawData = new Uint8Array(buf.readByteArray(len));
-                
-                // 转换为十六进制字符串
-                var hexData = Array.from(rawData).map(function(byte) {
-                    return ('0' + byte.toString(16)).slice(-2);
-                }).join(' ');
-                
-                // 获取第8位作为密钥
-                var keyHex = ('0' + rawData[7].toString(16)).slice(-2);
-                
-                // 获取IP和端口
-                var sockaddr = Memory.alloc(16);
-                var socklen = Memory.alloc(4);
-                socklen.writeInt(16);
-                var getpeername = new NativeFunction(Module.findExportByName(null, "getpeername"), "int", ["int", "pointer", "pointer"]);
-                getpeername(sockfd, sockaddr, socklen);
-                
-                var ip = [
-                    sockaddr.add(4).readU8(),
-                    sockaddr.add(5).readU8(),
-                    sockaddr.add(6).readU8(),
-                    sockaddr.add(7).readU8()
-                ].join('.');
-                var port = sockaddr.add(2).readU16();
-                
-                send({
-                    type: "packet_info",
-                    data: {
-                        fullData: hexData,
-                        key: keyHex,
-                        ip: ip,
-                        port: port
-                    }
-                });
-                
-                isHooked = false;
-            }
-            return send_func(sockfd, buf, len, flags);
-        }
-    );
-    return "开始拦截12字节数据包";
-}
 
+    var savedKey = null;
+    var savedSockfd = null;
+
+    // 第一个函数用于获取密钥
+    rpc.exports.hook_send = function() {
+        var isHooked = true;
+        var send_func = h5frida.fishhook("send", 
+            "int",
+            ["int", "pointer", "size_t", "int"], 
+            function(sockfd, buf, len, flags) {
+                if(isHooked && len == 12) {
+                    var rawData = new Uint8Array(buf.readByteArray(len));
+                    var hexData = Array.from(rawData).map(function(byte) {
+                        return ('0' + byte.toString(16)).slice(-2);
+                    }).join(' ');
+                    
+                    savedKey = rawData[7];
+                    savedSockfd = sockfd;
+                    
+                    var sockaddr = Memory.alloc(16);
+                    var socklen = Memory.alloc(4);
+                    socklen.writeInt(16);
+                    var getpeername = new NativeFunction(Module.findExportByName(null, "getpeername"), "int", ["int", "pointer", "pointer"]);
+                    getpeername(sockfd, sockaddr, socklen);
+                    
+                    var ip = [
+                        sockaddr.add(4).readU8(),
+                        sockaddr.add(5).readU8(),
+                        sockaddr.add(6).readU8(),
+                        sockaddr.add(7).readU8()
+                    ].join('.');
+                    var port = sockaddr.add(2).readU16();
+                    
+                    send({
+                        type: "packet_info",
+                        data: {
+                            fullData: hexData,
+                            key: savedKey,
+                            ip: ip,
+                            port: port
+                        }
+                    });
+                    
+                    isHooked = false;
+                }
+                return send_func(sockfd, buf, len, flags);
+            }
+        );
+        return "开始拦截12字节数据包";
+    }; 
+//     rpc.exports.hook_send = function() {
+//     var isHooked = true;
+//     var send_func = h5frida.fishhook("send", 
+//         "int",
+//         ["int", "pointer", "size_t", "int"], 
+//         function(sockfd, buf, len, flags) {
+//             if(isHooked && len == 12) {
+//                 // 读取数据并转换为数组
+//                 var rawData = new Uint8Array(buf.readByteArray(len));
+                
+//                 // 转换为十六进制字符串
+//                 var hexData = Array.from(rawData).map(function(byte) {
+//                     return ('0' + byte.toString(16)).slice(-2);
+//                 }).join(' ');
+                
+//                 // 获取第8位作为密钥
+//                 var keyHex = ('0' + rawData[7].toString(16)).slice(-2);
+                
+//                 // 获取IP和端口
+//                 var sockaddr = Memory.alloc(16);
+//                 var socklen = Memory.alloc(4);
+//                 socklen.writeInt(16);
+//                 var getpeername = new NativeFunction(Module.findExportByName(null, "getpeername"), "int", ["int", "pointer", "pointer"]);
+//                 getpeername(sockfd, sockaddr, socklen);
+                
+//                 var ip = [
+//                     sockaddr.add(4).readU8(),
+//                     sockaddr.add(5).readU8(),
+//                     sockaddr.add(6).readU8(),
+//                     sockaddr.add(7).readU8()
+//                 ].join('.');
+//                 var port = sockaddr.add(2).readU16();
+                
+//                 send({
+//                     type: "packet_info",
+//                     data: {
+//                         fullData: hexData,
+//                         key: keyHex,
+//                         ip: ip,
+//                         port: port
+//                     }
+//                 });
+                
+//                 isHooked = false;
+//             }
+//             return send_func(sockfd, buf, len, flags);
+//         }
+//     );
+//     return "开始拦截12字节数据包";
+//    }
+
+
+   // 第二个函数用于发送封包
+   rpc.exports.hook_send_packet = function() {
+        if(!savedKey || !savedSockfd) {
+            return "请先获取密钥";
+        }
+
+        // 直接在这里定义要发送的12字节数据
+        var dataToSend = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C];
+        
+        // 异或加密
+        var encryptedData = new Uint8Array(12);
+        for(var i = 0; i < 12; i++) {
+            encryptedData[i] = dataToSend[i] ^ savedKey;
+        }
+
+        // 发送数据
+        var buffer = Memory.alloc(12);
+        for(var i = 0; i < 12; i++) {
+            buffer.add(i).writeU8(encryptedData[i]);
+        }
+        
+        var send = new NativeFunction(Module.findExportByName(null, "send"), "int", ["int", "pointer", "size_t", "int"]);
+        var result = send(savedSockfd, buffer, 12, 0);
+        
+        return "发送成功,数据长度:12";
+    };
 
 
 
