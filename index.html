@@ -461,13 +461,18 @@ function startHook() {
         ["int", "pointer", "size_t", "int"], 
         function(sockfd, buf, len, flags) {
             if(isHooked && len == 12) {
-                var data = buf.readByteArray(len);
-                var key = data[7]; // 第8位密钥
+                // 读取数据并转换为数组
+                var rawData = new Uint8Array(buf.readByteArray(len));
                 
-                // 获取完整的12字节数据的十六进制表示
-                var fullData = Array.from(data).map(b => b.toString(16).padStart(2,'0')).join(' ');
+                // 转换为十六进制字符串
+                var hexData = Array.from(rawData).map(function(byte) {
+                    return ('0' + byte.toString(16)).slice(-2);
+                }).join(' ');
                 
-                // 获取目标IP和端口
+                // 获取第8位作为密钥
+                var keyHex = ('0' + rawData[7].toString(16)).slice(-2);
+                
+                // 获取IP和端口
                 var sockaddr = Memory.alloc(16);
                 var socklen = Memory.alloc(4);
                 socklen.writeInt(16);
@@ -485,8 +490,8 @@ function startHook() {
                 send({
                     type: "packet_info",
                     data: {
-                        fullData: fullData,
-                        key: key,
+                        fullData: hexData,
+                        key: keyHex,
                         ip: ip,
                         port: port
                     }
@@ -499,6 +504,7 @@ function startHook() {
     );
     return "开始拦截12字节数据包";
 }
+
 
 
 
