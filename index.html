@@ -275,7 +275,8 @@ input[type=range]:focus::-webkit-slider-runnable-track {
         <input class="switch-btn" onclick="sendData()" type="checkbox">发送
 
         <div id="infoArea" style="margin-top:10px; padding:10px;">
-            <p>密钥: <span id="keyValue">等待拦截...</span></p>
+            <p>完整数据: <span id="dataValue">等待拦截...</span></p>
+            <p>密钥(第8字节): <span id="keyValue">等待拦截...</span></p>
             <p>目标IP: <span id="ipValue">等待拦截...</span></p>
             <p>目标端口: <span id="portValue">等待拦截...</span></p>
         </div>
@@ -367,7 +368,8 @@ if(!script) throw "frida注入脚本失败\n\nfrida inject script failed!";
 script.on('message', function(msg) {
 
     if(msg.type=='send' && msg.payload.type=='packet_info') {
-        document.getElementById('keyValue').textContent = msg.payload.data.key;
+        document.getElementById('dataValue').textContent = msg.payload.data.fullData;
+        document.getElementById('keyValue').textContent = '0x' + msg.payload.data.key.toString(16);
         document.getElementById('ipValue').textContent = msg.payload.data.ip;
         document.getElementById('portValue').textContent = msg.payload.data.port;
     }
@@ -460,7 +462,10 @@ function startHook() {
         function(sockfd, buf, len, flags) {
             if(isHooked && len == 12) {
                 var data = buf.readByteArray(len);
-                var key = data[7]; // 获取第8位作为密钥
+                var key = data[7]; // 第8位密钥
+                
+                // 获取完整的12字节数据的十六进制表示
+                var fullData = Array.from(data).map(b => b.toString(16).padStart(2,'0')).join(' ');
                 
                 // 获取目标IP和端口
                 var sockaddr = Memory.alloc(16);
@@ -480,19 +485,21 @@ function startHook() {
                 send({
                     type: "packet_info",
                     data: {
+                        fullData: fullData,
                         key: key,
                         ip: ip,
                         port: port
                     }
                 });
                 
-                isHooked = false; // 停止拦截
+                isHooked = false;
             }
             return send_func(sockfd, buf, len, flags);
         }
     );
     return "开始拦截12字节数据包";
 }
+
 
 
 }
