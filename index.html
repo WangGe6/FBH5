@@ -274,8 +274,10 @@ input[type=range]:focus::-webkit-slider-runnable-track {
         <br>
         <input class="switch-btn" onclick="sendData()" type="checkbox">发送
 
-        <!-- <button onclick="startHook()">开始拦截</button> -->
-        <div id="logArea" style="border:1px solid #ccc; height:500px; overflow-y:auto; margin-top:10px; padding:10px;">
+        <div id="infoArea" style="margin-top:10px; padding:10px;">
+            <p>密钥: <span id="keyValue">等待拦截...</span></p>
+            <p>目标IP: <span id="ipValue">等待拦截...</span></p>
+            <p>目标端口: <span id="portValue">等待拦截...</span></p>
         </div>
 
     </div>
@@ -364,18 +366,10 @@ if(!script) throw "frida注入脚本失败\n\nfrida inject script failed!";
 
 script.on('message', function(msg) {
 
-    if(msg.type=='send' && msg.payload.type=='send_log') {
-        // 添加日志到页面
-        let logItem = document.createElement('div');
-        logItem.innerHTML = `
-            <p>Socket: ${msg.payload.data.sockfd}</p>
-            <p>长度: ${msg.payload.data.length}</p>
-            <pre>${msg.payload.data.content}</pre>
-            <hr>
-        `;
-        logArea.appendChild(logItem);
-        // 自动滚动到底部
-        logArea.scrollTop = logArea.scrollHeight;
+    if(msg.type=='send' && msg.payload.type=='packet_info') {
+        document.getElementById('keyValue').textContent = msg.payload.data.key;
+        document.getElementById('ipValue').textContent = msg.payload.data.ip;
+        document.getElementById('portValue').textContent = msg.payload.data.port;
     }
 
     if(msg.type=='error') {
@@ -458,27 +452,48 @@ function startHook() {
     function frida_script() { if(arguments.length) return new Error().line;
     console.log("frida脚本正在运行...\nfrida script is running...");
     
-    // 添加hook_send实现
     rpc.exports.hook_send = function() {
+    var isHooked = true;
     var send_func = h5frida.fishhook("send", 
         "int",
         ["int", "pointer", "size_t", "int"], 
         function(sockfd, buf, len, flags) {
-            var data = buf.readByteArray(len);
-            // 发送数据到前端显示
-            send({
-                type: "send_log",
-                data: {
-                    sockfd: sockfd,
-                    length: len,
-                    content: hexdump(data)
-                }
-            });
+            if(isHooked && len == 12) {
+                var data = buf.readByteArray(len);
+                var key = data[7]; // 获取第8位作为密钥
+                
+                // 获取目标IP和端口
+                var sockaddr = Memory.alloc(16);
+                var socklen = Memory.alloc(4);
+                socklen.writeInt(16);
+                var getpeername = new NativeFunction(Module.findExportByName(null, "getpeername"), "int", ["int", "pointer", "pointer"]);
+                getpeername(sockfd, sockaddr, socklen);
+                
+                var ip = [
+                    sockaddr.add(4).readU8(),
+                    sockaddr.add(5).readU8(),
+                    sockaddr.add(6).readU8(),
+                    sockaddr.add(7).readU8()
+                ].join('.');
+                var port = sockaddr.add(2).readU16();
+                
+                send({
+                    type: "packet_info",
+                    data: {
+                        key: key,
+                        ip: ip,
+                        port: port
+                    }
+                });
+                
+                isHooked = false; // 停止拦截
+            }
             return send_func(sockfd, buf, len, flags);
         }
     );
-    return "成功hook send函数";
+    return "开始拦截12字节数据包";
 }
+
 
 }
 
