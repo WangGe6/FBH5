@@ -369,7 +369,7 @@ script.on('message', function(msg) {
 
     if(msg.type=='send' && msg.payload.type=='packet_info') {
         document.getElementById('dataValue').textContent = msg.payload.data.fullData;
-        document.getElementById('keyValue').textContent = '0x' + msg.payload.data.key.toString(16);
+        document.getElementById('keyValue').textContent = msg.payload.data.key;
         document.getElementById('ipValue').textContent = msg.payload.data.ip;
         document.getElementById('portValue').textContent = msg.payload.data.port;
     }
