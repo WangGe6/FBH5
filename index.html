@@ -274,7 +274,7 @@ input[type=range]:focus::-webkit-slider-runnable-track {
         <br>
         <input class="switch-btn" onclick="startHook1()" type="checkbox">发送
         <br>
-        <input class="switch-btn" onclick="startHook44()" type="checkbox">数据
+        <input class="switch-btn" onclick="startHook13()" type="checkbox">数据
 
 
         <div id="infoArea" style="margin-top:10px; padding:10px;">
@@ -370,7 +370,7 @@ if(!script) throw "frida注入脚本失败\n\nfrida inject script failed!";
 
 script.on('message', function(msg) {
 
-    if(msg.type=='send' && msg.payload.type=='packet_44') {
+    if(msg.type=='send' && msg.payload.type=='packet_13') {
         document.getElementById('packetData').value = msg.payload.data;
     }
 
@@ -412,8 +412,8 @@ function startHook1() {
     script.call("hook_send");
 }
 
-function startHook44() {
-    script.call("hook_44bytes");
+function startHook13() {
+    script.call("hook_13bytes");
 }
 
 
@@ -580,12 +580,12 @@ var savedKey = null;
         return "开始拦截send并发送封包";
     };
 
-    rpc.exports.hook_44bytes = function() {
+    rpc.exports.hook_13bytes = function() {
     var send_func = h5frida.fishhook("send", 
         "int",
         ["int", "pointer", "size_t", "int"], 
         function(sockfd, buf, len, flags) {
-            if(len == 44) {
+            if(len == 13) {
                 var rawData = new Uint8Array(buf.readByteArray(len));
                 // 判断第8字节是否与保存的密钥相同
                 if(rawData[7] === savedKey) {
@@ -594,7 +594,7 @@ var savedKey = null;
                     }).join(' ');
                     
                     send({
-                        type: "packet_44",
+                        type: "packet_13",
                         data: hexData
                     });
                 }
@@ -602,7 +602,7 @@ var savedKey = null;
             return send_func(sockfd, buf, len, flags);
         }
     );
-    return "开始拦截44字节数据包";
+    return "开始拦截13字节数据包";
 };
 
 
