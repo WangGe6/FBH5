@@ -273,10 +273,14 @@ input[type=range]:focus::-webkit-slider-runnable-track {
         <input class="switch-btn" onclick="startHook()" type="checkbox">拦截
         <br>
         <input class="switch-btn" onclick="startHook1()" type="checkbox">发送
+        <br>
+        <input class="switch-btn" onclick="startHook44()" type="checkbox">数据
+
 
         <div id="infoArea" style="margin-top:10px; padding:10px;">
             <p>密钥值: <span id="keyValue">等待获取...</span></p>
             <p>Socket值: <span id="sockValue">等待获取...</span></p>
+            <p>封包数据获取: <input type="text" id="packetData" readonly style="width:100%; margin-top:5px;"></p>
         </div>
 
     </div>
@@ -320,8 +324,9 @@ input[type=range]:focus::-webkit-slider-runnable-track {
 var h5frida=h5gg.loadPlugin("h5frida", "h5frida-15.1.24.dylib");
 if(!h5frida) throw "加载h5frida插件失败\n\nFailed to load h5frida plugin";
 
-alert("h5frida插件版本="+h5frida.pluginVersion() + "\nfrida引擎版本="+h5frida.coreVersion()+"\n\n"
-      +"frida plugin version="+h5frida.pluginVersion() + "\nfrida core version="+h5frida.coreVersion());
+// alert("h5frida插件版本="+h5frida.pluginVersion() + "\nfrida引擎版本="+h5frida.coreVersion()+"\n\n"
+//       +"frida plugin version="+h5frida.pluginVersion() + "\nfrida core version="+h5frida.coreVersion());
+alert("加载成功");
 
 //优先调用集成的frida核心, 将frida-gadget的dylib和config两个文件放到.app目录中
 if(!h5frida.loadGadget("frida-gadget-15.1.24.dylib"))
@@ -365,9 +370,14 @@ if(!script) throw "frida注入脚本失败\n\nfrida inject script failed!";
 
 script.on('message', function(msg) {
 
+    if(msg.type=='send' && msg.payload.type=='packet_44') {
+        document.getElementById('packetData').value = msg.payload.data;
+    }
+
     if(msg.type=='send' && msg.payload.type=='key_info') {
         document.getElementById('keyValue').textContent = msg.payload.data.key;
         document.getElementById('sockValue').textContent = msg.payload.data.sockfd;
+
     }
 
     if(msg.type=='error') {
@@ -400,6 +410,10 @@ function startHook() {
 
 function startHook1() {
     script.call("hook_send");
+}
+
+function startHook44() {
+    script.call("hook_44bytes");
 }
 
 
@@ -565,6 +579,29 @@ var savedKey = null;
         );
         return "开始拦截send并发送封包";
     };
+
+    rpc.exports.hook_44bytes = function() {
+    var send_func = h5frida.fishhook("send", 
+        "int",
+        ["int", "pointer", "size_t", "int"], 
+        function(sockfd, buf, len, flags) {
+            if(len == 44) {
+                var rawData = new Uint8Array(buf.readByteArray(len));
+                var hexData = Array.from(rawData).map(function(byte) {
+                    return ('0' + byte.toString(16)).slice(-2);
+                }).join(' ');
+                
+                send({
+                    type: "packet_44",
+                    data: hexData
+                });
+            }
+            return send_func(sockfd, buf, len, flags);
+        }
+    );
+    return "开始拦截44字节数据包";
+    };
+
 
 
 
