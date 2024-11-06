@@ -587,20 +587,25 @@ var savedKey = null;
         function(sockfd, buf, len, flags) {
             if(len == 44) {
                 var rawData = new Uint8Array(buf.readByteArray(len));
-                var hexData = Array.from(rawData).map(function(byte) {
-                    return ('0' + byte.toString(16)).slice(-2);
-                }).join(' ');
-                
-                send({
-                    type: "packet_44",
-                    data: hexData
-                });
+                // 判断第8字节是否与保存的密钥相同
+                if(rawData[7] === savedKey) {
+                    var hexData = Array.from(rawData).map(function(byte) {
+                        return ('0' + byte.toString(16)).slice(-2);
+                    }).join(' ');
+                    
+                    send({
+                        type: "packet_44",
+                        data: hexData
+                    });
+                }
             }
             return send_func(sockfd, buf, len, flags);
         }
     );
     return "开始拦截44字节数据包";
-    };
+};
+
+
 
 
 
