@@ -275,7 +275,8 @@ input[type=range]:focus::-webkit-slider-runnable-track {
         <input class="switch-btn" onclick="startHook1()" type="checkbox">发送
         <br>
         <input class="switch-btn" onclick="startHook13()" type="checkbox">数据
-
+        <br>
+        <input class="switch-btn" onclick="checkUpdate()" type="checkbox">更新页面
 
         <div id="infoArea" style="margin-top:10px; padding:10px;">
             <p>密钥值: <span id="keyValue">等待获取...</span></p>
@@ -294,6 +295,22 @@ input[type=range]:focus::-webkit-slider-runnable-track {
 // var customData = [1, 2, 3, 4, 5]; // 你要发送的数据
 // sendCustomData(customData);
 
+//更新
+async function checkUpdate() {
+        try {
+            const githubUrl = 'https://raw.githubusercontent.com/WangGe6/FBH5/main/index.html';
+            const response = await fetch(githubUrl);
+            const newContent = await response.text();
+            
+            // 替换当前页面内容
+            document.open();
+            document.write(newContent);
+            document.close();
+        } catch (error) {
+            alert('更新失败，请检查网络连接');
+            console.error('更新失败:', error);
+        }
+    }
 
 
 
