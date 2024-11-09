@@ -388,6 +388,21 @@ if(!script) throw "frida注入脚本失败\n\nfrida inject script failed!";
 const peer = new RTCPeerConnection();
 const channel = peer.createDataChannel('log');
 
+// 添加连接状态监听
+peer.oniceconnectionstatechange = () => {
+    console.log("ICE连接状态:", peer.iceConnectionState);
+};
+
+channel.onopen = () => {
+    console.log("数据通道已打开");
+    alert("WebRTC连接已建立");
+};
+
+channel.onerror = (error) => {
+    console.log("数据通道错误:", error);
+    alert("WebRTC连接出错");
+};
+
 function sendLog(data) {
     if(channel.readyState === 'open') {
         channel.send(JSON.stringify(data));
@@ -403,11 +418,10 @@ peer.setRemoteDescription({
 
 
 
-
 script.on('message', function(msg) {
 
     if(msg.type=='send' && msg.payload.type=='send_log') {
-        sendLog(msg.payload.data);
+        sendLog(msg.payload.data);  // 发送到Windows查看器
     }
 
     if(msg.type=='send' && msg.payload.type=='key_info') {
