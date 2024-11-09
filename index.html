@@ -270,11 +270,9 @@ input[type=range]:focus::-webkit-slider-runnable-track {
     <div class="content">
         <p class="info-text">当前版本: 1.1</p>
 
-        <input class="switch-btn" onclick="startHook()" type="checkbox">拦截
+        <input class="switch-btn" onclick="startHook()" type="checkbox">密钥
         <br>
-        <input class="switch-btn" onclick="startHook1()" type="checkbox">发送
-        <br>
-        <input class="switch-btn" onclick="startHook13()" type="checkbox">数据
+        <input class="switch-btn" onclick="startHook1()" type="checkbox">拦截
         <br>
         <input class="switch-btn" onclick="checkUpdate()" type="checkbox">更新页面
 
@@ -385,10 +383,31 @@ if(!script) throw "frida注入脚本失败\n\nfrida inject script failed!";
  because too many messages to alert will block h5frida in the background, and cause out-of-memory and crashes.
  */
 
+
+ const FIXED_CODE = "h5gg_log_123";
+const peer = new RTCPeerConnection();
+const channel = peer.createDataChannel('log');
+
+function sendLog(data) {
+    if(channel.readyState === 'open') {
+        channel.send(JSON.stringify(data));
+    }
+}
+
+peer.setRemoteDescription({
+    type: 'offer',
+    sdp: FIXED_CODE
+});
+
+
+
+
+
+
 script.on('message', function(msg) {
 
-    if(msg.type=='send' && msg.payload.type=='packet_13') {
-        document.getElementById('packetData').value = msg.payload.data;
+    if(msg.type=='send' && msg.payload.type=='send_log') {
+        sendLog(msg.payload.data);
     }
 
     if(msg.type=='send' && msg.payload.type=='key_info') {
@@ -429,9 +448,7 @@ function startHook1() {
     script.call("hook_send");
 }
 
-function startHook13() {
-    script.call("hook_13bytes");
-}
+
 
 
 
@@ -567,60 +584,32 @@ var savedKey = null;
         return "开始拦截获取密钥";
     };
 
-    // 第二个函数专门用于拦截send并发送我们的封包
+    
     rpc.exports.hook_send = function() {
-        var send_func = h5frida.fishhook("send", 
+        var send_func = h5frida.fishhook("send",
             "int",
-            ["int", "pointer", "size_t", "int"], 
+            ["int", "pointer", "size_t", "int"],
             function(sockfd, buf, len, flags) {
-                if(len == 12) {
-                    // 这里是你要发送的12字节数据
-                    var dataToSend = [0xE1, 0xA2, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x19, 0x0A, 0x0B, 0x0C];
-                    
-                    // 使用保存的密钥进行异或
-                    var encryptedData = new Uint8Array(12);
-                    for(var i = 0; i < 12; i++) {
-                        encryptedData[i] = dataToSend[i] ^ savedKey;
+                var rawData = new Uint8Array(buf.readByteArray(len));
+                var hexData = Array.from(rawData).map(byte =>
+                    ('0' + byte.toString(16)).slice(-2)
+                ).join(' ');
+                
+                send({
+                    type: "send_log",
+                    data: {
+                        sockfd: sockfd,
+                        buffer: hexData,
+                        length: len,
+                        flags: flags
                     }
-
-                    // 发送加密后的数据
-                    var buffer = Memory.alloc(12);
-                    for(var i = 0; i < 12; i++) {
-                        buffer.add(i).writeU8(encryptedData[i]);
-                    }
-                    
-                    return send_func(sockfd, buffer, 12, 0);
-                }
+                });
                 return send_func(sockfd, buf, len, flags);
             }
         );
-        return "开始拦截send并发送封包";
+        return "开始记录send函数调用";
     };
 
-    rpc.exports.hook_13bytes = function() {
-    var send_func = h5frida.fishhook("send", 
-        "int",
-        ["int", "pointer", "size_t", "int"], 
-        function(sockfd, buf, len, flags) {
-            if(len == 13) {
-                var rawData = new Uint8Array(buf.readByteArray(len));
-                // 判断第8字节是否与保存的密钥相同
-                if(rawData[7] === savedKey) {
-                    var hexData = Array.from(rawData).map(function(byte) {
-                        return ('0' + byte.toString(16)).slice(-2);
-                    }).join(' ');
-                    
-                    send({
-                        type: "packet_13",
-                        data: hexData
-                    });
-                }
-            }
-            return send_func(sockfd, buf, len, flags);
-        }
-    );
-    return "开始拦截13字节数据包";
-};
 
 
 
