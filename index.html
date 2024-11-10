@@ -392,12 +392,7 @@ if(!script) throw "frida注入脚本失败\n\nfrida inject script failed!";
 
 script.on('message', function(msg) {
 
-    if(msg.type=='send' && msg.payload.type=='send_log') {
-    document.getElementById('sockValue').textContent = msg.payload.data.sockfd;
-    document.getElementById('bufferValue').textContent = msg.payload.data.buffer;
-    document.getElementById('lengthValue').textContent = msg.payload.data.length;
-    document.getElementById('flagsValue').textContent = msg.payload.data.flags;
-}
+
 
 
     if(msg.type=='send' && msg.payload.type=='key_info') {
@@ -605,28 +600,6 @@ var savedKey = null;
     return "开始监控send函数";
 };
 
-rpc.exports.hook_send = function() {
-        var send_func = h5frida.fishhook("send",
-            "int",
-            ["int", "pointer", "size_t", "int"],
-            function(sockfd, buf, len, flags) {
-             
-                send({
-                    type: "send_log",
-                    data: {
-                        sockfd: sockfd,
-                        buffer: hexData,
-                        length: len,
-                        flags: flags
-                    }
-                });
-                
-                return send_func(sockfd, buf, len, flags);
-            }
-        );
-        return "开始记录send函数调用";
-    };
-}
 
 
 
@@ -636,6 +609,7 @@ rpc.exports.hook_send = function() {
 
 
 
+    }
     
 
     //执行到这里之后script.load()才会返回 //script.load() will return after execution here
