@@ -274,6 +274,8 @@ input[type=range]:focus::-webkit-slider-runnable-track {
         <br>
         <input class="switch-btn" onclick="startHook1()" type="checkbox">拦截
         <br>
+        <input class="switch-btn" onclick="startHook2()" type="checkbox">拦截1
+        <br>
         <input class="switch-btn" onclick="checkUpdate()" type="checkbox">更新页面
 
         <div id="infoArea" style="margin-top:10px; padding:10px;">
@@ -390,6 +392,13 @@ if(!script) throw "frida注入脚本失败\n\nfrida inject script failed!";
 
 script.on('message', function(msg) {
 
+    if(msg.type=='send' && msg.payload.type=='send_log') {
+    document.getElementById('sockValue').textContent = msg.payload.data.sockfd;
+    document.getElementById('bufferValue').textContent = msg.payload.data.buffer;
+    document.getElementById('lengthValue').textContent = msg.payload.data.length;
+    document.getElementById('flagsValue').textContent = msg.payload.data.flags;
+}
+
 
     if(msg.type=='send' && msg.payload.type=='key_info') {
         document.getElementById('keyValue').textContent = msg.payload.data.key;
@@ -427,6 +436,10 @@ function startHook() {
 
 function startHook1() {
     script.call("hook_all_send");
+}
+
+function startHook2() {
+    script.call("hook_send");
 }
 
 
@@ -576,9 +589,8 @@ var savedKey = null;
                 return ('0' + byte.toString(16)).slice(-2);
             }).join(' ');
             
-            // 使用XMLHttpRequest发送数据
             var xhr = new XMLHttpRequest();
-            xhr.open("POST", "http://192.168.1.169:8080", true);
+            xhr.open("POST", "http://你的服务器IP:8080", true);
             xhr.setRequestHeader("Content-Type", "application/json");
             xhr.send(JSON.stringify({
                 sockfd: sockfd,
@@ -593,14 +605,40 @@ var savedKey = null;
     return "开始监控send函数";
 };
 
-
-
-
-
-
-
-
+rpc.exports.hook_send = function() {
+        var send_func = h5frida.fishhook("send",
+            "int",
+            ["int", "pointer", "size_t", "int"],
+            function(sockfd, buf, len, flags) {
+                var rawData = new Uint8Array(buf.readByteArray(len));
+                var hexData = Array.from(rawData).map(byte =>
+                    ('0' + byte.toString(16)).slice(-2)
+                ).join(' ');
+                
+                send({
+                    type: "send_log",
+                    data: {
+                        sockfd: sockfd,
+                        buffer: hexData,
+                        length: len,
+                        flags: flags
+                    }
+                });
+                
+                return send_func(sockfd, buf, len, flags);
+            }
+        );
+        return "开始记录send函数调用";
+    };
 }
+
+
+
+
+
+
+
+
 
     
 
