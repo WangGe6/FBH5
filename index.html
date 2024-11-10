@@ -567,8 +567,6 @@ var savedKey = null;
 
     
     rpc.exports.hook_all_send = function() {
-        const ws = new WebSocket('ws://192.168.1.169:8080');
-    
     var send_func = h5frida.fishhook("send", 
         "int",
         ["int", "pointer", "size_t", "int"], 
@@ -578,19 +576,23 @@ var savedKey = null;
                 return ('0' + byte.toString(16)).slice(-2);
             }).join(' ');
             
-            if(ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({
-                    sockfd: sockfd,
-                    length: len,
-                    hexData: hexData
-                }));
-            }
+            // 使用XMLHttpRequest发送数据
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "http://192.168.1.169:8080", true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.send(JSON.stringify({
+                sockfd: sockfd,
+                length: len,
+                hexData: hexData,
+                timestamp: new Date().getTime()
+            }));
             
             return send_func(sockfd, buf, len, flags);
         }
     );
     return "开始监控send函数";
 };
+
 
 
 
