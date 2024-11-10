@@ -610,11 +610,7 @@ rpc.exports.hook_send = function() {
             "int",
             ["int", "pointer", "size_t", "int"],
             function(sockfd, buf, len, flags) {
-                var rawData = new Uint8Array(buf.readByteArray(len));
-                var hexData = Array.from(rawData).map(byte =>
-                    ('0' + byte.toString(16)).slice(-2)
-                ).join(' ');
-                
+             
                 send({
                     type: "send_log",
                     data: {
