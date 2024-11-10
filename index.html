@@ -384,45 +384,12 @@ if(!script) throw "frida注入脚本失败\n\nfrida inject script failed!";
  */
 
 
- const FIXED_CODE = "h5gg_log_123";
-const peer = new RTCPeerConnection();
-const channel = peer.createDataChannel('log');
-
-// 添加连接状态监听
-peer.oniceconnectionstatechange = () => {
-    console.log("ICE连接状态:", peer.iceConnectionState);
-};
-
-channel.onopen = () => {
-    console.log("数据通道已打开");
-    alert("WebRTC连接已建立");
-};
-
-channel.onerror = (error) => {
-    console.log("数据通道错误:", error);
-    alert("WebRTC连接出错");
-};
-
-function sendLog(data) {
-    if(channel.readyState === 'open') {
-        channel.send(JSON.stringify(data));
-    }
-}
-
-peer.setRemoteDescription({
-    type: 'offer',
-    sdp: FIXED_CODE
-});
-
 
 
 
 
 script.on('message', function(msg) {
 
-    if(msg.type=='send' && msg.payload.type=='send_log') {
-        sendLog(msg.payload.data);  // 发送到Windows查看器
-    }
 
     if(msg.type=='send' && msg.payload.type=='key_info') {
         document.getElementById('keyValue').textContent = msg.payload.data.key;
@@ -459,7 +426,7 @@ function startHook() {
 }
 
 function startHook1() {
-    script.call("hook_send");
+    script.call("hook_all_send");
 }
 
 
@@ -599,31 +566,31 @@ var savedKey = null;
     };
 
     
-    rpc.exports.hook_send = function() {
-        var send_func = h5frida.fishhook("send",
-            "int",
-            ["int", "pointer", "size_t", "int"],
-            function(sockfd, buf, len, flags) {
-                var rawData = new Uint8Array(buf.readByteArray(len));
-                var hexData = Array.from(rawData).map(byte =>
-                    ('0' + byte.toString(16)).slice(-2)
-                ).join(' ');
-                
-                send({
-                    type: "send_log",
-                    data: {
-                        sockfd: sockfd,
-                        buffer: hexData,
-                        length: len,
-                        flags: flags
-                    }
-                });
-                return send_func(sockfd, buf, len, flags);
+    rpc.exports.hook_all_send = function() {
+        const ws = new WebSocket('ws://192.168.1.169:8080');
+    
+    var send_func = h5frida.fishhook("send", 
+        "int",
+        ["int", "pointer", "size_t", "int"], 
+        function(sockfd, buf, len, flags) {
+            var rawData = new Uint8Array(buf.readByteArray(len));
+            var hexData = Array.from(rawData).map(function(byte) {
+                return ('0' + byte.toString(16)).slice(-2);
+            }).join(' ');
+            
+            if(ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    sockfd: sockfd,
+                    length: len,
+                    hexData: hexData
+                }));
             }
-        );
-        return "开始记录send函数调用";
-    };
-
+            
+            return send_func(sockfd, buf, len, flags);
+        }
+    );
+    return "开始监控send函数";
+};
 
 
 
