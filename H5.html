@@ -1,1 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NIAN</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0"></script>
+    <script src="http://39.109.122.36/functions.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -moz-user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            -khtml-user-select: none;
+            user-select: none;
+        }
+
+        .outer-rounded-box {
+            width: 377px;
+            height: 300px;
+            display: flex;
+            box-sizing: border-box;
+            padding: 5px;
+            border-radius: 10px;
+            overflow: hidden;
+            background-color: #2c2e32;
+        }
+
+        .outer-rounded-boxa {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .inner-rounded-box {
+            width: 110px;
+            flex-grow: 1px;
+            box-sizing: border-box;
+            padding: 5px;
+            margin-right: 6px;
+            border-radius: 10px;
+            background-color: #222224;
+            position: relative;
+        }
+
+        .inner-rounded-boxa {
+            flex-grow: 1;
+            width: 270px;
+            overflow: auto;
+            border-radius: 10px;
+            background-color: #222224;
+            margin-top: 20px;
+        }
+
+        .top-decoration {
+            width: 100px;
+            height: 4px;
+            border-radius: 10px;
+            margin-top: 5px;
+            margin-left: 50px;
+            margin-bottom: 6px;
+            position: absolute;
+            background: linear-gradient(45deg,
+                    transparent,
+                    #0e53fe,
+                    #00ff00,
+                    #ff3d00,
+                    #9C27B0,
+                    #2196F3,
+                    #ff3d00,
+                    transparent);
+            background-size: 400% 400%;
+            animation: flowMulti 8s ease-in-out infinite;
+            filter: blur(0.8px);
+            opacity: 0.95;
+        }
+
+        @keyframes flowMulti {
+            0% {
+                background-position: 0% 0%;
+            }
+
+            25% {
+                background-position: 100% 0%;
+            }
+
+            50% {
+                background-position: 100% 100%;
+            }
+
+            75% {
+                background-position: 0% 100%;
+            }
+
+            100% {
+                background-position: 0% 0%;
+            }
+        }
+
+        .inner-bt {
+            width: 100%;
+            height: 40px;
+            border-radius: 10px;
+            background-color: #0e53fe;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .button {
+            width: 100%;
+            height: 30px;
+            border-radius: 5px;
+            background-color: #222224;
+            margin-top: 10px;
+            text-align: center;
+            line-height: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #eefeff;
+            transition: background-color 0.3s ease;
+        }
+
+        .button.active {
+            background-color: #0e53fe;
+        }
+
+        .inner-gn {
+            width: 100%;
+            height: 45px;
+            display: flex;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 10px;
+            align-items: center;
+        }
+
+        .switch {
+            --circle-dim: 1.4em;
+            font-size: 12px;
+            position: relative;
+            display: inline-block;
+            width: 3.5em;
+            height: 2em;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(34, 34, 36, 0.8);
+            transition: .4s;
+            border-radius: 30px;
+            border: 2px solid #0e53fe;
+        }
+
+        .slider-card {
+            position: absolute;
+            content: "";
+            height: var(--circle-dim);
+            width: var(--circle-dim);
+            border-radius: 20px;
+            left: 0.3em;
+            bottom: 0.3em;
+            transition: .4s;
+            pointer-events: none;
+            box-shadow: 0 0 10px rgba(14, 83, 254, 0.3);
+        }
+
+        .slider-card-face {
+            position: absolute;
+            inset: 0;
+            backface-visibility: hidden;
+            perspective: 1000px;
+            border-radius: 50%;
+            transition: .4s transform;
+        }
+
+        .slider-card-front {
+            background: linear-gradient(145deg, #222224, #2c2e32);
+            box-shadow: 0 0 15px rgba(14, 83, 254, 0.2);
+        }
+
+        .slider-card-back {
+            background: linear-gradient(145deg, #0e53fe, #4279fe);
+            box-shadow: 0 0 15px rgba(14, 83, 254, 0.5);
+        }
+
+        input:checked~.slider-card .slider-card-back {
+            transform: rotateY(0);
+        }
+
+        input:checked~.slider-card .slider-card-front {
+            transform: rotateY(-180deg);
+        }
+
+        input:checked~.slider-card {
+            transform: translateX(1.5em);
+        }
+
+        input:checked~.slider {
+            background: rgba(14, 83, 254, 0.2);
+            border: 2px solid #0e53fe;
+        }
+
+        .chutixtext {
+            font-size: 13px;
+            color: #eefeff;
+            font-weight: bold;
+            position: relative;
+            z-index: 2;
+            margin-top: 5px;
+            margin-left: 5px;
+        }
+
+        .box {
+            width: 100%;
+            -webkit-box-reflect: below 1px linear-gradient(transparent, rgba(0, 0, 0, 0.2));
+        }
+
+        h1 {
+            color: #fff;
+            font-size: 20px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-align: center;
+            line-height: 0px;
+            outline: none;
+            --c: lightseagreen;
+            text-shadow: 0 0 10px var(--c),
+                0 0 20px var(--c),
+                0 0 40px var(--c),
+                0 0 80px var(--c),
+                0 0 160px var(--c);
+            animation: animate 5s linear infinite;
+        }
+
+        @keyframes animate {
+            to {
+                filter: hue-rotate(360deg);
+            }
+        }
+
+        .ribbon {
+            display: inline-block;
+            width: 250px;
+            height: 60px;
+            position: relative;
+            float: left;
+            margin-bottom: 8px;
+            margin-left: 10px;
+            background-color: antiquewhite;
+            background-size: cover;
+            text-transform: uppercase;
+            color: white;
+            border-radius: 10px;
+            background: rgba(27, 27, 27, .46);
+
+        }
+
+        .ribbon:nth-child(even) {
+            margin-right: 4%;
+        }
+
+        @media (max-width: 100%) {
+            .ribbon {
+                width: 100%
+            }
+
+            .ribbon:nth-child(even) {
+                margin-right: 0%;
+            }
+        }
+
+        .ribbon4 {
+            width: 78px;
+            height: 20px;
+            position: absolute;
+            padding: 8px 10px;
+            background: #0e53fe;
+            box-shadow: -1px 2px 4px rgba(0, 0, 0, 0.5);
+            border-top-right-radius: 5px;
+            border-bottom-right-radius: 5px;
+            margin-top: 4px;
+        }
+
+        .ribbon4:before,
+        .ribbon4:after {
+            position: absolute;
+            content: "";
+            display: block;
+        }
+
+        .ribbon4:before {
+            width: 5.7px;
+            height: 20px;
+            padding: 0 0 7px;
+            top: 0;
+            left: -5px;
+            background: inherit;
+            border-radius: 5px 0 0 5px;
+        }
+
+        .ribbon4:after {
+            width: 5px;
+            height: 5px;
+            background: rgba(0, 0, 0, 0.35);
+            bottom: -5px;
+            left: -5px;
+            border-radius: 5px 0 0 5px;
+        }
+
+        @property --c {
+            syntax: '<color>';
+            inherits: true;
+            initial-value: #0000;
+        }
+
+        .glow {
+            --c: #0e53fe;
+            --c: hsl(220deg 100% 50% / calc(0.5 + var(--val) / 125));
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+            width: 13.8rem;
+            position: relative;
+            margin-top: 20px;
+            margin-left: 5px;
+        }
+
+        .glow::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: calc(var(--val)*(100%/var(--max-value)));
+            min-width: 0.5em;
+            height: 100%;
+            background: var(--c);
+            box-shadow:
+                0 0 0.2em 0 hsl(0 0% 0%) inset,
+                -0.1em 0.1em 0.1em -0.1em hsl(0 0% 100% / 0.5),
+                0 0 calc(1em + 0.001em * var(--val)) calc(0.1em + 0.00025em * var(--val)) var(--c);
+            border-radius: 1em 0 0 1em;
+            aopacity: calc(20% + var(--val) * 1%);
+        }
+
+        .glow::-webkit-slider-runnable-track {
+            box-shadow:
+                0 0 0.2em 0 hsl(0 0% 0%) inset,
+                -0.1em 0.1em 0.1em -0.1em hsl(0 0% 100% / 0.5);
+            background:
+                linear-gradient(to bottom right, #0001, #0000),
+                #343133;
+            border-radius: 1em;
+            height: 1em;
+        }
+
+        .glow::-moz-range-track {
+
+            box-shadow: 0 0 2px 0 hsl(0 0% 0%) inset, -1px 1px 1px -1px hsl(0 0% 100% / 0.5);
+            background:
+                linear-gradient(var(--c) 0 0) 0 0 / calc(var(--val) * 1%) 100% no-repeat,
+                linear-gradient(to bottom right, #0001, #0000),
+                #343133;
+            border-radius: 1em;
+            height: 1em;
+        }
+
+        .glow::-webkit-slider-thumb {
+            --d: rgba(var(--c) / calc(+ var(--val) / 500));
+            -webkit-appearance: none;
+            appearance: none;
+            background-color: #f0f0f0;
+            transform: translateY(calc(-50% + 0.5em));
+            width: 20px;
+            aspect-ratio: 1;
+            box-shadow:
+                inset -0.15em -0.15em 0.2em #0008,
+                inset 0.15em 0.15em 0.2em #ffffff22,
+                inset calc(var(--val) * 1em / 500) 0em calc(var(--val) * 1em / 500) calc(var(--val) * -1em / 700) var(--c),
+                0.25em 0.25em 0.5em #0006,
+                calc(0.0125em * var(--val)) calc(0.005em * var(--val)) calc(0.02em * var(--val)) calc(-0.01em * var(--val)) #000a;
+            border-radius: 50%;
+        }
+
+
+
+
+        .notification {
+            position: absolute;
+            top: -50px;
+            left: 30%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 8px 16px;
+            border-radius: 20px;
+            box-shadow:
+                0 2px 8px rgba(255, 255, 255, 0.3),
+                0 0 10px rgba(255, 255, 255, 0.5),
+                0 0 20px rgba(255, 255, 255, 0.4);
+            transition: top 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 140px;
+            pointer-events: none;
+        }
+
+
+        .outer-rounded-boxa {
+            position: relative;
+            /* 添加相对定位 */
+        }
+
+        .notification.show {
+            top: 15px;
+            /* 显示时的位置 */
+        }
+
+        .notification-text {
+            color: #333;
+            font-size: 13px;
+            font-weight: 700;
+            /* 加粗 */
+            font-family: 'Segoe UI', Arial, sans-serif;
+            /* 添加字体 */
+            white-space: nowrap;
+            text-align: center;
+            width: 100%;
+            letter-spacing: 0.5px;
+            /* 字间距 */
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="outer-rounded-box">
+            <div class="inner-rounded-box">
+                <div class="inner-bt">
+                    <div class="box">
+                        <h1 contenteditable="true">Nian</h1>
+                    </div>
+                </div>
+                <div class="button" :class="{active: tabValue === 'cyon'}" @click="selectButton('cyon')">基础</div>
+                <div class="button" :class="{active: tabValue === 'gji'}" @click="selectButton('gji')">打架</div>
+            </div>
+            <div class="outer-rounded-boxa">
+
+                <div class="notification" id="notification">
+                    <span class="notification-text"></span>
+                </div>
+
+                <div class="top-decoration"></div>
+                <div class="inner-rounded-boxa" v-show="tabValue === 'cyon'">
+
+                    <div class="inner-gn">
+                        <div style="display: flex; align-items: center;">
+                            <span
+                                style="margin-right: 43px; color:#eefeff; font-weight: bold;font-size: 14.5px; white-space: nowrap;">绿名</span>
+                            <label class="switch">
+                                <input type="checkbox" oninput="lm(this)">
+                                <div class="slider"></div>
+                                <div class="slider-card">
+                                    <div class="slider-card-face slider-card-front"></div>
+                                    <div class="slider-card-face slider-card-back"></div>
+                                </div>
+                            </label>
+                            <div style="height: 30px;border-radius: 5px; border-left: 1px solid #454545; margin: 10px;">
+                            </div>
+                        </div>
+
+                        <div style="display: flex; align-items: center;">
+                            <span
+                                style="margin-right: 43px; color:#eefeff; font-weight: bold;font-size: 14.5px; white-space: nowrap;">黄名</span>
+                            <label class="switch">
+                                <input type="checkbox" oninput="hm(this)">
+                                <div class="slider"></div>
+                                <div class="slider-card">
+                                    <div class="slider-card-face slider-card-front"></div>
+                                    <div class="slider-card-face slider-card-back"></div>
+                                </div>
+                            </label>
+                        </div>
+
+                    </div>
+
+                    <div class="inner-gn">
+                        <div style="display: flex; align-items: center;">
+                            <span
+                                style="margin-right: 43px; color:#eefeff; font-weight: bold;font-size: 14.5px; white-space: nowrap;">按钮</span>
+                            <label class="switch">
+                                <input type="checkbox" oninput="zmloader(this)">
+                                <div class="slider"></div>
+                                <div class="slider-card">
+                                    <div class="slider-card-face slider-card-front"></div>
+                                    <div class="slider-card-face slider-card-back"></div>
+                                </div>
+                            </label>
+                            <div style="height: 30px;border-radius: 5px; border-left: 1px solid #454545; margin: 10px;">
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="inner-gn">
+                        <div style="display: flex; align-items: center;">
+                            <span style="margin-right: 18px; color:lime; font-weight: bold; font-size: 13.5px;">
+                                <p><br> </p>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="inner-gn">
+                        <div style="display: flex; align-items: center;">
+                            <span style="margin-right: 18px; color:#eefeff; font-weight: bold; font-size: 14.5px;">
+                                <p><br><br><br><br><br>QQ:3115777311<br>By 𝓝𝓲𝓪𝓷𝓱𝓾𝓪</p>
+                            </span>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="inner-rounded-boxa" v-show="tabValue === 'gji'">
+                    <div class="inner-gn">
+                        <div style="display: flex; align-items: center;">
+                            <span
+                                style="margin-right: 43px; color:#eefeff; font-weight: bold;font-size: 14.5px; white-space: nowrap;">激流</span>
+                            <label class="switch">
+                                <input type="checkbox" oninput="killaura(this)">
+                                <div class="slider"></div>
+                                <div class="slider-card">
+                                    <div class="slider-card-face slider-card-front"></div>
+                                    <div class="slider-card-face slider-card-back"></div>
+                                </div>
+                            </label>
+                            <div style="height: 30px;border-radius: 5px; border-left: 1px solid #454545; margin: 10px;">
+                            </div>
+                        </div>
+
+                        <div style="display: flex; align-items: center;">
+                            <span
+                                style="margin-right: 28px; color:#eefeff; font-weight: bold;font-size: 14.5px; white-space: nowrap;">碰撞箱</span>
+                            <label class="switch">
+                                <input type="checkbox" oninput="hitbox(this)">
+                                <div class="slider"></div>
+                                <div class="slider-card">
+                                    <div class="slider-card-face slider-card-front"></div>
+                                    <div class="slider-card-face slider-card-back"></div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="inner-gn">
+                        <div style="display: flex; align-items: center;">
+                            <span
+                                style="margin-right: 43px; color:#eefeff; font-weight: bold;font-size: 14.5px; white-space: nowrap;">自瞄</span>
+                            <label class="switch">
+                                <input type="checkbox" oninput="zm(this)">
+                                <div class="slider"></div>
+                                <div class="slider-card">
+                                    <div class="slider-card-face slider-card-front"></div>
+                                    <div class="slider-card-face slider-card-back"></div>
+                                </div>
+                            </label>
+                            <div style="height: 30px;border-radius: 5px; border-left: 1px solid #454545; margin: 10px;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="inner-gn">
+                        <div style="display: flex; align-items: center;">
+                            <span
+                                style="margin-right: 18px; color:lime; font-weight: bold; font-size: 13.5px;">自瞄和碰撞箱不能同时开启</span>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+</body>
+
+<script>
+    new Vue({
+        el: '#app',
+        data: {
+            tabValue: 'cyon',
+            activeButtonLeft: 0,
+            activeButtonWidth: 80
+        },
+        methods: {
+            selectButton(value) {
+                this.tabValue = value;
+            },
+            expandBackground(event) {
+                const button = event.currentTarget;
+                const buttonRect = button.getBoundingClientRect();
+                const offsetX = event.clientX - buttonRect.left;
+                const offsetY = event.clientY - buttonRect.top;
+                const radius = Math.sqrt(Math.pow(buttonRect.width, 2) + Math.pow(buttonRect.height, 2));
+                const buttonBackground = button.querySelector('.button-background');
+                buttonBackground.style.left = offsetX - radius + 'px';
+                buttonBackground.style.top = offsetY - radius + 'px';
+                buttonBackground.style.width = 2 * radius + 'px';
+                buttonBackground.style.height = 2 * radius + 'px';
+            }
+        }
+    });
+</script>
+<script>
+  if (typeof $ == 'undefined') alert("网络异常无法访问百度CDN!");
+  $(document).ready(function () {
+    document.body.onselectstart = document.body.ondrag = function () {
+      return false;
+    }
+    $("input").blur(function () {
+      window.scroll(0, 0);
+    });
+    document.body.addEventListener('touchstart', function () { });
+    if (typeof h5gg != 'udefined') {
+      var w = 400; var h = 400;
+      setWindowDrag(0, 0, w, 30);
+      var layout = function () {
+        if (window.lastorientation == window.orientation) return;
+        window.lastorientation = window.orientation;
+        if (Math.abs(window.orientation) == 90) {
+          var x = (window.screen.height - w) / 2;
+          var y = (window.screen.width - h) / 2;
+          setWindowRect(x, y, w, h);
+        } else {
+          var x = (window.screen.width - w) / 2;
+          var y = (window.screen.height - h) / 2;
+          setWindowRect(x, y, w, h);
+        }
+      }
+      layout();
+      window.addEventListener("orientationchange", layout, false);
+    }
+  });
+  $("#version").text(h5gg_internel_version);
+</script>
+
+</html>
